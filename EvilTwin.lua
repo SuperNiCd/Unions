@@ -49,6 +49,8 @@ function EvilTwin:loadMonoGraph()
     local pmVCA = self:createObject("Multiply","pmVCA")
     local pmIndex = self:createObject("GainBias","pmIndex")
     local pmIndexRange = self:createObject("MinMax","pmIndexRange")
+    local modPhaseIndex = self:createObject("GainBias","modPhaseIndex")
+    local modPhaseIndexRange = self:createObject("MinMax","modPhaseIndexRange")
     local amVCA = self:createObject("Multiply","amVCA")
     local amAttenuator = self:createObject("Multiply","amAttenuator")
     local amMixer = self:createObject("Sum","amMixer")
@@ -80,6 +82,7 @@ function EvilTwin:loadMonoGraph()
     connect(fbMain,"Out",fbMainRange,"In")
     connect(fbMod,"Out",fbModRange,"In")
     connect(outputLevel,"Out",outputLevelRange,"In")
+    connect(modPhaseIndex,"Out",modPhaseIndexRange,"In")
 
     -- Tuning
     connect(tune,"Out",main,"V/Oct")
@@ -102,6 +105,9 @@ function EvilTwin:loadMonoGraph()
     connect(mod,"Out",pmVCA,"Left")
     connect(pmIndex,"Out",pmVCA,"Right")
     connect(pmVCA,"Out",main,"Phase")
+
+    -- Modulalator phase modulation
+    connect(modPhaseIndex,"Out",mod,"Phase")
 
     -- Phase Feedback
     connect(fbMain,"Out",main,"Feedback")
@@ -130,6 +136,7 @@ function EvilTwin:loadMonoGraph()
     self:createMonoBranch("fm",fmIndex,"In",fmIndex,"Out")
     self:createMonoBranch("am",amIndex,"In",amIndex,"Out")
     self:createMonoBranch("pm",pmIndex,"In",pmIndex,"Out")
+    self:createMonoBranch("modPhase",modPhaseIndex,"In",modPhaseIndex,"Out")
     self:createMonoBranch("ratio",ratio,"In",ratio,"Out")
     self:createMonoBranch("fbMain",fbMain,"In",fbMain,"Out")
     self:createMonoBranch("fbMod",fbMod,"In",fbMod,"Out")
@@ -145,7 +152,7 @@ function EvilTwin:loadStereoGraph()
 end
 
 local views = {
-  expanded = {"tune","f0","ratio","fm","am","pm","fbMain","fbMod","level"},
+  expanded = {"tune","f0","ratio","fm","am","pm","fbMain","fbMod","modPhase","level"},
   collapsed = {},
 }
 
@@ -219,6 +226,16 @@ function EvilTwin:onLoadViews(objects,branches)
     branch = branches.fm,
     gainbias = objects.fmIndex,
     range = objects.fmIndexRange,
+    biasMap = indexMap,
+    initialBias = 0.0,
+  }
+
+  controls.modPhase = GainBias {
+    button = "modPhas",
+    description = "Modulator Phase",
+    branch = branches.modPhase,
+    gainbias = objects.modPhaseIndex,
+    range = objects.modPhaseIndexRange,
     biasMap = indexMap,
     initialBias = 0.0,
   }
