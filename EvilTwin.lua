@@ -145,7 +145,7 @@ function EvilTwin:loadStereoGraph()
 end
 
 local views = {
-  expanded = {"fm","am","pm","ratio","fbMain","fbMod","f0","tune","level"},
+  expanded = {"tune","f0","ratio","fm","am","pm","fbMain","fbMod","level"},
   collapsed = {},
 }
 
