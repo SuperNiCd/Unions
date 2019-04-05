@@ -195,8 +195,8 @@ function EvilTwin:onLoadViews(objects,branches)
   local controls = {}
 
   controls.ratio = GainBias {
-    button = "modRTO",
-    description = "Mod Ratio",
+    button = "ratioM",
+    description = "Modulator Ratio",
     branch = branches.ratio,
     gainbias = objects.ratio,
     range = objects.ratioRange,
@@ -205,8 +205,8 @@ function EvilTwin:onLoadViews(objects,branches)
   }  
 
   controls.mratio = GainBias {
-    button = "carRTO",
-    description = "Carr Ratio",
+    button = "ratioC",
+    description = "Carrier Ratio",
     branch = branches.mratio,
     gainbias = objects.mratio,
     range = objects.mratioRange,
