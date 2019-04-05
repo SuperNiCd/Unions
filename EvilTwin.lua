@@ -31,6 +31,7 @@ function EvilTwin:loadMonoGraph()
     -- Objects
     local main = self:createObject("SineOscillator","main")
     local mod = self:createObject("SineOscillator","mod")
+    local sync = self:createObject("Comparator","sync")
     local fbMain = self:createObject("GainBias","fbMain")
     local fbMainRange = self:createObject("MinMax","fbMainRange")
     local fbMod = self:createObject("GainBias","fbMod")
@@ -71,6 +72,7 @@ function EvilTwin:loadMonoGraph()
     one:hardSet("Offset",1.0)
     negOne:hardSet("Offset",-1.0)
     fmGainConst:hardSet("Offset",2500.0)
+    sync:setTriggerMode()
 
     -- Indicators
     connect(tune,"Out",tuneRange,"In")
@@ -91,6 +93,9 @@ function EvilTwin:loadMonoGraph()
     connect(f0,"Out",ratioVCA,"Left")
     connect(ratio,"Out",ratioVCA,"Right")
     connect(ratioVCA,"Out",mod,"Fundamental")
+
+    -- Main Osc Sync
+    connect(sync,"Out",main,"Sync")
 
     -- Linear Frequency Modulation
     connect(mod,"Out",fmGain,"Left")
@@ -143,6 +148,7 @@ function EvilTwin:loadMonoGraph()
     self:createMonoBranch("f0",f0,"In",f0,"Out")
     self:createMonoBranch("tune",tune,"In",tune,"Out")
     self:createMonoBranch("level",outputLevel,"In",outputLevel,"Out")
+    self:createMonoBranch("sync",sync,"In",sync,"Out")
 
 end
 
@@ -152,7 +158,7 @@ function EvilTwin:loadStereoGraph()
 end
 
 local views = {
-  expanded = {"tune","f0","ratio","fm","am","pm","fbMain","fbMod","modPhase","level"},
+  expanded = {"tune","f0","ratio","fm","am","pm","fbMain","fbMod","modPhase","sync","level"},
   collapsed = {},
 }
 
@@ -178,6 +184,13 @@ function EvilTwin:onLoadViews(objects,branches)
     biasMap = ratioMap,
     initialBias = 1.0,
   }  
+
+  controls.sync = Gate {
+    button = "sync",
+    description = "Sync main osc",
+    branch = branches.sync,
+    comparator = objects.sync,
+  }
 
   controls.fbMain = GainBias {
     button = "fbMain",
