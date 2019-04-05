@@ -36,7 +36,6 @@ function EvilTwin:loadMonoGraph()
     local fbMainRange = self:createObject("MinMax","fbMainRange")
     local fbMod = self:createObject("GainBias","fbMod")
     local fbModRange = self:createObject("MinMax","fbModRange")
-    -- local wavefolder = self:createObject("SineOscillator","wavefolder")
     local tune = self:createObject("ConstantOffset","tune")
     local tuneRange = self:createObject("MinMax","tuneRange")
     local f0 = self:createObject("GainBias","f0")
@@ -47,6 +46,11 @@ function EvilTwin:loadMonoGraph()
     local fmIndexRange = self:createObject("MinMax","fmIndexRange")
     local fmGain = self:createObject("Multiply","fmGain")
     local fmGainConst = self:createObject("ConstantOffset","fmGainConst")
+    local efmMixer = self:createObject("Sum","efmMixer")
+    local efmVCA = self:createObject("Multiply","efmVCA")
+    local efmIndex = self:createObject("GainBias","efmIndex")
+    local efmIndexRange = self:createObject("MinMax","efmIndexRange")
+    local efmGain = self:createObject("Multiply","efmGain")
     local pmVCA = self:createObject("Multiply","pmVCA")
     local pmIndex = self:createObject("GainBias","pmIndex")
     local pmIndexRange = self:createObject("MinMax","pmIndexRange")
@@ -64,6 +68,9 @@ function EvilTwin:loadMonoGraph()
     local ratioVCA = self:createObject("Multiply","ratioVCA")
     local ratio = self:createObject("GainBias","ratio")
     local ratioRange = self:createObject("MinMax","ratioRange")
+    local mratioVCA = self:createObject("Multiply","mratioVCA")
+    local mratio = self:createObject("GainBias","mratio")
+    local mratioRange = self:createObject("MinMax","mratioRange")
     local outputLevel = self:createObject("GainBias","outputLevel")
     local outputLevelRange = self:createObject("MinMax","outputLevelRange")
     local outputVCA = self:createObject("Multiply","outputVCA")
@@ -71,28 +78,32 @@ function EvilTwin:loadMonoGraph()
     -- Setttings
     one:hardSet("Offset",1.0)
     negOne:hardSet("Offset",-1.0)
-    fmGainConst:hardSet("Offset",2500.0)
+    fmGainConst:hardSet("Offset",800.0)
     sync:setTriggerMode()
 
     -- Indicators
     connect(tune,"Out",tuneRange,"In")
     connect(f0,"Out",f0Range,"In")
     connect(fmIndex,"Out",fmIndexRange,"In")
+    connect(efmIndex,"Out",efmIndexRange,"In")
     connect(pmIndex,"Out",pmIndexRange,"In")
     connect(amIndex,"Out",amIndexRange,"In")
     connect(ratio,"Out",ratioRange,"In")
+    connect(mratio,"Out",mratioRange,"In")
     connect(fbMain,"Out",fbMainRange,"In")
     connect(fbMod,"Out",fbModRange,"In")
     connect(outputLevel,"Out",outputLevelRange,"In")
     connect(modPhaseIndex,"Out",modPhaseIndexRange,"In")
 
     -- Tuning
-    connect(tune,"Out",main,"V/Oct")
+    connect(tune,"Out",efmMixer,"Left")--main,"V/Oct")
     connect(tune,"Out",mod,"V/Oct")
-    connect(f0,"Out",main,"Fundamental")
+    connect(f0,"Out",mratioVCA,"Left")--main,"Fundamental")
     connect(f0,"Out",ratioVCA,"Left")
     connect(ratio,"Out",ratioVCA,"Right")
     connect(ratioVCA,"Out",mod,"Fundamental")
+    connect(mratio,"Out",mratioVCA,"Right")
+    connect(mratioVCA,"Out",main,"Fundamental")
 
     -- Main Osc Sync
     connect(sync,"Out",main,"Sync")
@@ -103,8 +114,14 @@ function EvilTwin:loadMonoGraph()
     connect(fmGain,"Out",fmVCA,"Left")
     connect(fmIndex,"Out",fmVCA,"Right")
     connect(fmVCA,"Out",fmMixer,"Right")
-    connect(f0,"Out",fmMixer,"Left")
+    connect(mratioVCA,"Out",fmMixer,"Left")
     connect(fmMixer,"Out",main,"Fundamental")
+
+    -- Exponential Frequency Modulation
+    connect(mod,"Out",efmVCA,"Left")
+    connect(efmIndex,"Out",efmVCA,"Right")
+    connect(efmVCA,"Out",efmMixer,"Right")
+    connect(efmMixer,"Out",main,"V/Oct")
 
     -- Phase Modulation
     connect(mod,"Out",pmVCA,"Left")
@@ -139,10 +156,12 @@ function EvilTwin:loadMonoGraph()
 
     -- Export control chains
     self:createMonoBranch("fm",fmIndex,"In",fmIndex,"Out")
+    self:createMonoBranch("efm",efmIndex,"In",efmIndexRange,"Out")
     self:createMonoBranch("am",amIndex,"In",amIndex,"Out")
     self:createMonoBranch("pm",pmIndex,"In",pmIndex,"Out")
     self:createMonoBranch("modPhase",modPhaseIndex,"In",modPhaseIndex,"Out")
     self:createMonoBranch("ratio",ratio,"In",ratio,"Out")
+    self:createMonoBranch("mratio",mratio,"In",mratio,"Out")
     self:createMonoBranch("fbMain",fbMain,"In",fbMain,"Out")
     self:createMonoBranch("fbMod",fbMod,"In",fbMod,"Out")
     self:createMonoBranch("f0",f0,"In",f0,"Out")
@@ -158,7 +177,7 @@ function EvilTwin:loadStereoGraph()
 end
 
 local views = {
-  expanded = {"tune","f0","ratio","fm","am","pm","fbMain","fbMod","modPhase","sync","level"},
+  expanded = {"tune","f0","mratio","ratio","fm","efm","am","pm","fbMain","fbMod","modPhase","sync","level"},
   collapsed = {},
 }
 
@@ -168,19 +187,29 @@ local function linMap(min,max,superCoarse,coarse,fine,superFine)
   return map
 end
 
-local indexMap = linMap(-1.0,1,0.1,0.01,0.001,0.001)
-local amMap = linMap(0,1,0.1,0.01,0.001,0.001)
+local indexMap = linMap(-1.0,1,0.1,0.01,0.001,0.00001)
+local amMap = linMap(0,1,0.1,0.01,0.001,0.00001)
 local ratioMap = linMap(1.0,24.0,1.0,1.0,0.1,0.01)
 
 function EvilTwin:onLoadViews(objects,branches)
   local controls = {}
 
   controls.ratio = GainBias {
-    button = "ratio",
-    description = "Ratio",
+    button = "modRTO",
+    description = "Mod Ratio",
     branch = branches.ratio,
     gainbias = objects.ratio,
     range = objects.ratioRange,
+    biasMap = ratioMap,
+    initialBias = 1.0,
+  }  
+
+  controls.mratio = GainBias {
+    button = "carRTO",
+    description = "Carr Ratio",
+    branch = branches.mratio,
+    gainbias = objects.mratio,
+    range = objects.mratioRange,
     biasMap = ratioMap,
     initialBias = 1.0,
   }  
@@ -234,11 +263,21 @@ function EvilTwin:onLoadViews(objects,branches)
   }
 
   controls.fm = GainBias {
-    button = "fm",
-    description = "FM Index",
+    button = "tzfm",
+    description = "TZFM Index",
     branch = branches.fm,
     gainbias = objects.fmIndex,
     range = objects.fmIndexRange,
+    biasMap = indexMap,
+    initialBias = 0.0,
+  }
+
+  controls.efm = GainBias {
+    button = "expfm",
+    description = "Exp FM Index",
+    branch = branches.efm,
+    gainbias = objects.efmIndex,
+    range = objects.efmIndexRange,
     biasMap = indexMap,
     initialBias = 0.0,
   }
