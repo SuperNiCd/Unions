@@ -96,9 +96,9 @@ function EvilTwin:loadMonoGraph()
     connect(modPhaseIndex,"Out",modPhaseIndexRange,"In")
 
     -- Tuning
-    connect(tune,"Out",efmMixer,"Left")--main,"V/Oct")
+    connect(tune,"Out",efmMixer,"Left")
     connect(tune,"Out",mod,"V/Oct")
-    connect(f0,"Out",mratioVCA,"Left")--main,"Fundamental")
+    connect(f0,"Out",mratioVCA,"Left")
     connect(f0,"Out",ratioVCA,"Left")
     connect(ratio,"Out",ratioVCA,"Right")
     connect(ratioVCA,"Out",mod,"Fundamental")
@@ -189,7 +189,7 @@ end
 
 local indexMap = linMap(-1.0,1,0.1,0.01,0.001,0.00001)
 local amMap = linMap(0,1,0.1,0.01,0.001,0.00001)
-local ratioMap = linMap(1.0,24.0,1.0,1.0,0.1,0.01)
+local ratioMap = linMap(0.0,24.0,1.0,1.0,0.1,0.01)
 
 function EvilTwin:onLoadViews(objects,branches)
   local controls = {}
