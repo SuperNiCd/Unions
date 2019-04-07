@@ -40,6 +40,12 @@ function EvilTwin:loadMonoGraph()
     local tuneRange = self:createObject("MinMax","tuneRange")
     local f0 = self:createObject("GainBias","f0")
     local f0Range = self:createObject("MinMax","f0Range")
+    local f0OffsetM = self:createObject("GainBias","f0OffsetM")
+    local f0OffsetMRange = self:createObject("MinMax","f0OffsetMRange")
+    local f0OffsetC = self:createObject("GainBias","f0OffsetC")
+    local f0OffsetCRange = self:createObject("MinMax","f0OffsetCRange")
+    local f0OffsetMMixer = self:createObject("Sum","f0OffsetMMixer")
+    local f0OffsetCMixer = self:createObject("Sum","f0OffsetCMixer")
     local fmMixer = self:createObject("Sum","fmMixer")
     local fmVCA = self:createObject("Multiply","fmVCA")
     local fmIndex = self:createObject("GainBias","fmIndex")
@@ -84,6 +90,8 @@ function EvilTwin:loadMonoGraph()
     -- Indicators
     connect(tune,"Out",tuneRange,"In")
     connect(f0,"Out",f0Range,"In")
+    connect(f0OffsetC,"Out",f0OffsetCRange,"In")
+    connect(f0OffsetM,"Out",f0OffsetMRange,"In")
     connect(fmIndex,"Out",fmIndexRange,"In")
     connect(efmIndex,"Out",efmIndexRange,"In")
     connect(pmIndex,"Out",pmIndexRange,"In")
@@ -101,9 +109,13 @@ function EvilTwin:loadMonoGraph()
     connect(f0,"Out",mratioVCA,"Left")
     connect(f0,"Out",ratioVCA,"Left")
     connect(ratio,"Out",ratioVCA,"Right")
-    connect(ratioVCA,"Out",mod,"Fundamental")
+    connect(ratioVCA,"Out",f0OffsetMMixer,"Left")
+    connect(f0OffsetM,"Out",f0OffsetMMixer,"Right")
+    connect(f0OffsetMMixer,"Out",mod,"Fundamental")
     connect(mratio,"Out",mratioVCA,"Right")
-    connect(mratioVCA,"Out",main,"Fundamental")
+    connect(mratioVCA,"Out",f0OffsetCMixer,"Left")
+    connect(f0OffsetC,"Out",f0OffsetCMixer,"Right")
+    --connect(f0OffsetCMixer,"Out",main,"Fundamental")
 
     -- Main Osc Sync
     connect(sync,"Out",main,"Sync")
@@ -114,7 +126,7 @@ function EvilTwin:loadMonoGraph()
     connect(fmGain,"Out",fmVCA,"Left")
     connect(fmIndex,"Out",fmVCA,"Right")
     connect(fmVCA,"Out",fmMixer,"Right")
-    connect(mratioVCA,"Out",fmMixer,"Left")
+    connect(f0OffsetCMixer,"Out",fmMixer,"Left")
     connect(fmMixer,"Out",main,"Fundamental")
 
     -- Exponential Frequency Modulation
@@ -165,6 +177,8 @@ function EvilTwin:loadMonoGraph()
     self:createMonoBranch("fbMain",fbMain,"In",fbMain,"Out")
     self:createMonoBranch("fbMod",fbMod,"In",fbMod,"Out")
     self:createMonoBranch("f0",f0,"In",f0,"Out")
+    self:createMonoBranch("offsetC",f0OffsetC,"In",f0OffsetC,"Out")
+    self:createMonoBranch("offsetM",f0OffsetM,"In",f0OffsetM,"Out")
     self:createMonoBranch("tune",tune,"In",tune,"Out")
     self:createMonoBranch("level",outputLevel,"In",outputLevel,"Out")
     self:createMonoBranch("sync",sync,"In",sync,"Out")
@@ -177,7 +191,7 @@ function EvilTwin:loadStereoGraph()
 end
 
 local views = {
-  expanded = {"tune","f0","mratio","ratio","fm","efm","am","pm","fbMain","fbMod","modPhase","sync","level"},
+  expanded = {"tune","f0","mratio","offsetC","ratio","offsetM","fm","efm","am","pm","fbMain","fbMod","modPhase","sync","level"},
   collapsed = {},
 }
 
@@ -190,12 +204,13 @@ end
 local indexMap = linMap(-1.0,1,0.1,0.01,0.001,0.00001)
 local amMap = linMap(0,1,0.1,0.01,0.001,0.00001)
 local ratioMap = linMap(0.0,24.0,1.0,1.0,0.1,0.01)
+local offsetMap = linMap(-20.0,20.0,1.0,1.0,0.01,0.001)
 
 function EvilTwin:onLoadViews(objects,branches)
   local controls = {}
 
   controls.ratio = GainBias {
-    button = "ratioM",
+    button = "M-ratio",
     description = "Modulator Ratio",
     branch = branches.ratio,
     gainbias = objects.ratio,
@@ -204,8 +219,30 @@ function EvilTwin:onLoadViews(objects,branches)
     initialBias = 1.0,
   }  
 
+  controls.offsetC = GainBias {
+    button = "C-offset",
+    description = "Carr freq offset",
+    branch = branches.offsetC,
+    gainbias = objects.f0OffsetC,
+    range = objects.f0OffsetCRange,
+    biasMap = offsetMap,
+    biasUnits = app.unitHertz,
+    initialBias = 0.0,
+  }    
+
+  controls.offsetM = GainBias {
+    button = "M-offset",
+    description = "Mod freq offset",
+    branch = branches.offsetM,
+    gainbias = objects.f0OffsetM,
+    range = objects.f0OffsetMRange,
+    biasMap = offsetMap,
+    biasUnits = app.unitHertz,
+    initialBias = 0.0,
+  }    
+
   controls.mratio = GainBias {
-    button = "ratioC",
+    button = "C-ratio",
     description = "Carrier Ratio",
     branch = branches.mratio,
     gainbias = objects.mratio,
@@ -215,15 +252,15 @@ function EvilTwin:onLoadViews(objects,branches)
   }  
 
   controls.sync = Gate {
-    button = "sync",
+    button = "M-sync",
     description = "Sync main osc",
     branch = branches.sync,
     comparator = objects.sync,
   }
 
   controls.fbMain = GainBias {
-    button = "fbMain",
-    description = "Main osc phase fb",
+    button = "C-fdbk",
+    description = "Carr osc phase fb",
     branch = branches.fbMain,
     gainbias = objects.fbMain,
     range = objects.fbMainRange,
@@ -232,7 +269,7 @@ function EvilTwin:onLoadViews(objects,branches)
   }
   
   controls.fbMod = GainBias {
-    button = "fbMod",
+    button = "M-fdbk",
     description = "Mod osc phase fb",
     branch = branches.fbMod,
     gainbias = objects.fbMod,
@@ -283,7 +320,7 @@ function EvilTwin:onLoadViews(objects,branches)
   }
 
   controls.modPhase = GainBias {
-    button = "modPhas",
+    button = "M-phase",
     description = "Modulator Phase",
     branch = branches.modPhase,
     gainbias = objects.modPhaseIndex,
