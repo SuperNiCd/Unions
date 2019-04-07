@@ -204,7 +204,7 @@ end
 local indexMap = linMap(-1.0,1,0.1,0.01,0.001,0.00001)
 local amMap = linMap(0,1,0.1,0.01,0.001,0.00001)
 local ratioMap = linMap(0.0,24.0,1.0,1.0,0.1,0.01)
-local offsetMap = linMap(-20.0,20.0,1.0,1.0,0.01,0.001)
+local offsetMap = linMap(-1000.0,1000.0,100.0,1.0,0.01,0.001)
 
 function EvilTwin:onLoadViews(objects,branches)
   local controls = {}
