@@ -117,8 +117,9 @@ function EvilTwin:loadMonoGraph()
     connect(f0OffsetC,"Out",f0OffsetCMixer,"Right")
     --connect(f0OffsetCMixer,"Out",main,"Fundamental")
 
-    -- Main Osc Sync
+    -- Osc Sync
     connect(sync,"Out",main,"Sync")
+    connect(sync,"Out",mod,"Sync")
 
     -- Linear Frequency Modulation
     connect(mod,"Out",fmGain,"Left")
