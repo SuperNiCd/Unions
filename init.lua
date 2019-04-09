@@ -4,7 +4,8 @@ local units = {
     {title="Scorpio Vocoder", moduleName="Scorpio", keywords="filter, modulate"},
 
     {category="Oscillators"},
-    {title="Evil Twin", moduleName="EvilTwin", keywords="oscillator"}
+    {title="Evil Twin", moduleName="EvilTwin", keywords="oscillator"},
+    {title="Prodigal Son",moduleName="ProdigalSon",keywords="oscillator"}
 }
   return {
     title = "Unions",
