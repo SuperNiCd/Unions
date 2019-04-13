@@ -5,7 +5,11 @@ local units = {
 
     {category="Oscillators"},
     {title="Evil Twin", moduleName="EvilTwin", keywords="oscillator"},
-    {title="Prodigal Son",moduleName="ProdigalSon",keywords="oscillator"}
+    {title="Prodigal Son",moduleName="ProdigalSon",keywords="oscillator"},
+    
+    {category="Envelopes"},
+    {title="MPEG",moduleName="MultiPointEG",keywords="envelope"}
+    
 }
   return {
     title = "Unions",
