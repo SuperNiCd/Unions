@@ -7,6 +7,9 @@ local units = {
     {title="Evil Twin", moduleName="EvilTwin", keywords="oscillator"},
     {title="Prodigal Son",moduleName="ProdigalSon",keywords="oscillator"},
     
+    {category="Filtering"},
+    {title="Multi Mode Filter",moduleName="MMF",keywords="filter"},
+
     {category="Envelopes"},
     {title="MPEG",moduleName="MultiPointEG",keywords="envelope"}
     
